@@ -35,7 +35,7 @@ public class PlayerManager implements PlayerManagerI {
     }
 
     public boolean isFolded() {
-        return this.state.folded || this.state.deposit == 0;
+        return this.state.folded || this.state.bank == 0;
     }
 
 
