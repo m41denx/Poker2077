@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch&display=swap');
+
+body {
+    background: #191922;
+}
+.ptable {
+    transform: rotateX(60deg);
+}
+
+.chakra {
+    font-family: 'Chakra Petch', sans-serif;
+}
