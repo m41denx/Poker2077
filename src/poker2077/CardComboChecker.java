@@ -123,9 +123,11 @@ public class CardComboChecker {
             for (int j = i + 1; j < cards.size(); j++) {
                 if(i==j) continue;
                 if (cards.get(i).getRank() == cards.get(j).getRank()) {
+                    var c1 = cards.get(i);
+                    var c2 = cards.get(j);
                     pairs++;
-                    cards.remove(i);
-                    cards.remove(j);
+                    cards.remove(c1);
+                    cards.remove(c2);
                     stopper = true;
                     break;
                 }
