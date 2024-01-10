@@ -101,7 +101,13 @@ const doCall = async () => {
 }
 
 const doRaise = async () => {
-    let v = await fetch(`/raise?amount=${amount}`).then(r=>r.json())
+    let val = parseInt(hget("ramount").value)
+    if(!val) {
+        createNotification("Выберите ненулевую ставку")
+        return
+
+    }
+    let v = await fetch(`/raise?amount=${val}`).then(r=>r.json())
     if(!v.success)
         createNotification(v.error)
     else
@@ -145,21 +151,7 @@ const smallCardGen = (sym, val, rot=0, mb=0, hover=true) => {
 
 const fillSelf = (player, isAdmin=false) => {
     let plh = hget("players")
-    plh.innerHTML+= `<div class="bottom-8 right-8  p-2 pr-4 absolute flex w-fit items-center gap-4 bg-black bg-opacity-50 rounded-xl border-solid border-[1px] border-slate-400">
-        <img src="img/user.png" class="h-24" />
-        <div class="text-white">
-            <p class="text-2xl">Вы</p>
-            <p class="ml-4">Банк: $<span>${player.balance}</span></p>
-        </div>
-        <div class="flex flex-col gap-2 text-white">
-            <p class="px-8 py-2 rounded-lg px bg-red-500 flex justify-center cursor-pointer hover:bg-red-700" onclick="doFold()">Фолд</p>
-            <p class="px-8 py-2 rounded-lg px bg-blue-500 flex justify-center cursor-pointer hover:bg-blue-700" onclick="doCall()">Колл</p>
-        </div>
-        <div class="flex flex-col gap-2 text-white">
-            <p class="px-8 py-2 rounded-lg px bg-green-500 flex justify-center cursor-pointer hover:bg-green-700" onclick="doRaise()">Рейз</p>
-            <input class="focus outline-none border-solid border-[1px] border-slate-400 rounded-lg px-4 py-2 w-32 text-black" placeholder="Сумма" value="${amount}" onchange="amount=this.value" />
-        </div>
-    </div>`
+    hget("bal").innerText = player.balance
     if(isAdmin) {
         plh.innerHTML+= `<div class="text-white bottom-8 left-8 p-2 absolute flex flex-col w-fit items-center gap-2 bg-black bg-opacity-50 rounded-xl border-solid border-[1px] border-slate-400">
         <span class="text-lg">Админ панель</span>

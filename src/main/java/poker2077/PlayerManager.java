@@ -7,7 +7,7 @@ import poker2077.ent.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlayerManager implements PlayerManagerI {
+public class PlayerManager implements IPlayerManager {
     protected Player state;
     public PlayerManager(String name, String uuid, long bank) {
         this.state = new Player();

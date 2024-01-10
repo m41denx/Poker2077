@@ -30,6 +30,22 @@
 
     </div>
 
+    <div class="bottom-8 right-8 p-2 pr-4 absolute flex w-fit items-center gap-4 bg-black bg-opacity-50 rounded-xl border-solid border-[1px] border-slate-400">
+        <img src="img/user.png" class="h-24" />
+        <div class="text-white">
+            <p class="text-2xl">Вы</p>
+            <p class="ml-4">Банк: $<span id="bal">0</span></p>
+        </div>
+        <div class="flex flex-col gap-2 text-white">
+            <p class="px-8 py-2 rounded-lg px bg-red-500 flex justify-center cursor-pointer hover:bg-red-700" onclick="doFold()">Фолд</p>
+            <p class="px-8 py-2 rounded-lg px bg-blue-500 flex justify-center cursor-pointer hover:bg-blue-700" onclick="doCall()">Колл</p>
+        </div>
+        <div class="flex flex-col gap-2 text-white">
+            <p class="px-8 py-2 rounded-lg px bg-green-500 flex justify-center cursor-pointer hover:bg-green-700" onclick="doRaise()">Рейз</p>
+            <input class="focus outline-none border-solid border-[1px] border-slate-400 rounded-lg px-4 py-2 w-32 text-black" placeholder="Сумма" value="50" id="ramount" onkeydown="this.value=this.value.replace(/[^0-9]/g,'');" onkeyup="this.value=this.value.replace(/[^0-9]/g,'');" />
+        </div>
+    </div>
+
 </div>
 
 <!-- Cool black circles -->

@@ -1,34 +1,20 @@
 package poker2077;
 
 import poker2077.ApiObjects.*;
-import poker2077.ent.Event;
-import poker2077.ent.Table;
+import poker2077.ent.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 // Место, где шизофрения встречает азарт
 public class GameManager {
 
-    final static String[] comboNames = {
-            "-",
-            "Старшая карта",
-            "Пара",
-            "Две пары",
-            "Тройка",
-            "Стрит",
-            "Флэш",
-            "Фулл Хаус",
-            "Каре",
-            "Стрит-флэш",
-            "Флэш-рояль",
-            "11 не существует, но если будет супер-редкий баг..."
-    }; // Это для уведомлений
     protected Table table;
     protected boolean isActive;
-    protected Map<String, PlayerManagerI> players = new HashMap<>(); // для аутентификации UUID -> Юзер
 
-    protected List<String> playerList = new ArrayList<>(); // список UUID для соблюдения порядка ходов (Map же жмыхнутый)
+    // Почему мап дерево
+    protected Map<String, IPlayerManager> players = new LinkedHashMap<>(); // для аутентификации UUID -> Юзер
 
     private List<Event> evtLoop = new LinkedList<>(); // все события, ботам отдаются только последнее
     private String currentPlayer = ""; // UUID текущего игрока (у нас фронт асинхронный, так что это единственный способ проверять кто ходит)
@@ -44,7 +30,7 @@ public class GameManager {
 
     private void nextPlayer() {
         // Это подобие одного тика в играх
-        if (this.playerList.size() == 1) {
+        if (this.players.size() == 1) {
             return;
         }
 
@@ -53,18 +39,40 @@ public class GameManager {
             p.onLoop(this.evtLoop.get(this.evtLoop.size()-1), this);
         }
 
-        // Берем следующего игрока из списка (циклично)
-        this.currentPlayer = this.playerList.get((this.playerList.indexOf(this.currentPlayer) + 1) % this.playerList.size());
+        // One day I was born, at the age of four
+        var pIter = players.keySet().iterator();
+        while (pIter.hasNext()) {
+            var p = pIter.next();
+            if (p.equals(this.currentPlayer)) {
+                if(!pIter.hasNext()) {
+                    pIter = players.keySet().iterator(); // Ну конечно, это же намного проще и понятнее чем листы с индексами
+                }
+                this.currentPlayer = pIter.next();
+                break;
+            }
+        }
+
+        // First el players.keySet().stream().toList().get(0);
+
         var curP = this.players.get(this.currentPlayer);
-        System.out.println("Current player: " + curP.getName());
+//        System.out.println("Current player: " + curP.getName());
         // Хост начинает, хост и заканчивает: если после полного круга у нас на столе 5 карт, то заканчиваем игру
-        if (Objects.equals(this.currentPlayer, this.playerList.get(0))) {
+        // My momma asked me a question: wth are those?
+        if (Objects.equals(this.currentPlayer, players.keySet().stream().toList().get(0))) {
             if (this.table.getFlow().size()==5) {
                 endGame();
                 return;
             }
-            // иначе, извольте терн
-            this.table.addFlow();
+            if (!isActive) {
+                // Выкладываем флоп только после начальных ставок, иначе грустно
+                this.table.addFlow();
+                this.table.addFlow();
+                this.table.addFlow();
+                isActive = true;
+            } else {
+                // иначе, извольте терн
+                this.table.addFlow();
+            }
         }
 
         // Если игрок вышел, то пинаем следующего
@@ -76,41 +84,45 @@ public class GameManager {
         }
     }
 
+    public static String microPrinter(List<Card> l) {
+        return l.stream().map(Card::toString).collect(Collectors.joining(" "));
+    }
+
     private void endGame() {
         // Пока мы считаем, никто не играет
         this.currentPlayer = "";
-        emitEvent(new Event(Event.EventType.CALL, "Конец игры. Подсчет карт...", 0));
-        String bestPlayerUUID = "";
-        int bestValue = 0;
-        for(var puuid: playerList) {
-            var p = players.get(puuid);
+        emitEvent(new Event(EventType.CALL, "Конец игры. Подсчет карт...", 0));
+        IPlayerManager bestPlayer = players.values().stream().findFirst().get(); // Да мне плевать на isPresent()
+        // Я удивлюсь если оно заработает
+        Combo bestValue = Combo.None;
+        for(var p: this.players.values()) {
             // если ты вышел, то и считать нечего
             if (p.isFolded())
                 continue;
             // Сейчас мы узнаем что за комбо у игрока
-            int val = CardComboChecker.checkComboValue(p.peek(), table.getFlow());
-            if (val>0) {
+            Combo val = CardComboChecker.checkComboValue(p.peek(), table.getFlow());
+            if (val!=Combo.None) {
                 // Если комбо есть, то это стоит отпраздновать
-                emitEvent(new Event(Event.EventType.RAISE, p.getName() + " - " + comboNames[val], val));
+                String msg = p.getName() + " - " + val + "\n" + microPrinter(p.peek());
+                emitEvent(new Event(EventType.RAISE, msg, val.ordinal()));
             }
-            if (val>bestValue) {
+            if (val.ordinal()>bestValue.ordinal()) {
                 // Если комбо лучше, то логично что лучше
                 bestValue = val;
-                bestPlayerUUID = puuid;
+                bestPlayer = p;
             } else if (val==bestValue) {
                 // Если комбо одинаковые у игроков, то ищем у кого старшая карта
                 var myCard = CardComboChecker.pGetComboHighCard(new ArrayList<>(p.peek()));
-                var bestCard = CardComboChecker.pGetComboHighCard(new ArrayList<>(players.get(bestPlayerUUID).peek()));
+                var bestCard = CardComboChecker.pGetComboHighCard(new ArrayList<>(bestPlayer.peek()));
 
                 // Так как enum идет от туза до 1, то id туза самое маленькое
                 if (myCard.ordinal()<bestCard.ordinal()) {
-                    bestPlayerUUID = puuid;
+                    bestPlayer = p;
                 }
             }
         }
-        var p = players.get(bestPlayerUUID);
-        emitEvent(new Event(Event.EventType.CALL, "Конец игры. Победил " + p.getName(), 0));
-        p.setBank(p.getBank()+table.getBankPool()); // Честные выплаты
+        emitEvent(new Event(EventType.CALL, "Конец игры. Победил " + bestPlayer.getName(), 0));
+        bestPlayer.setBank(bestPlayer.getBank()+table.getBankPool()); // Честные выплаты
         table = new Table(); // Сброс стола и подготовка к новой игре
         for(var pl: players.values()) {
             pl.reset();
@@ -118,7 +130,7 @@ public class GameManager {
             pl.giveCard(table.popDeck());
         }
         isActive = false;
-        currentPlayer = playerList.get(0); // Первый опять хост, но если он банкврот, то следующий
+        currentPlayer = players.keySet().stream().toList().get(0); // Первый опять хост, но если он банкврот, то следующий
         if (players.get(currentPlayer).isFolded()) {
             nextPlayer();
         }
@@ -136,22 +148,19 @@ public class GameManager {
         if (!Objects.equals(this.currentPlayer, uuid))
             return new GenericCtx(false, "Не ваш ход");
         var player = this.players.get(uuid);
+        if (sum==0) {
+            return new GenericCtx(false, "Укажите ненулевую ставку");
+        }
         if (player.isFolded())
             return new GenericCtx(false, "Вы уже вышли (фолд)");
         if (sum>player.getBank())
             return new GenericCtx(false, "Недостаточно средств");
-        if (this.table.getDeposit()==0) {
-            // Если депозит = 0, то это первый ход хоста. Поэтому помечаем игру как активную и выкладываем флоп
-            isActive = true;
-            this.table.addFlow();
-            this.table.addFlow();
-            this.table.addFlow();
-        }
+        //
         this.table.setBankPool(this.table.getBankPool()+sum);
         this.table.setDeposit(this.table.getDeposit()+sum);
         player.setBank(player.getBank()-sum);
         player.setDeposit(player.getDeposit()+sum);
-        this.emitEvent(new Event(Event.EventType.RAISE,player.getName()+": рейз (+"+sum+")", sum));
+        this.emitEvent(new Event(EventType.RAISE,player.getName()+": рейз (+"+sum+")", sum));
         this.nextPlayer();
         return new GenericCtx(true, "");
     }
@@ -162,6 +171,9 @@ public class GameManager {
         if (!Objects.equals(this.currentPlayer, uuid))
             return new GenericCtx(false, "Не ваш ход");
         var player = this.players.get(uuid);
+        if (table.getDeposit()==0) {
+            return new GenericCtx(false, "Сначала надо сделать депозит");
+        }
         if (player.isFolded())
             return new GenericCtx(false, "Вы уже вышли (фолд)");
         long delta = table.getDeposit() - player.getDeposit();
@@ -172,7 +184,7 @@ public class GameManager {
         this.table.setBankPool(this.table.getBankPool()+delta);
         player.setBank(player.getBank()-delta);
         player.setDeposit(player.getDeposit()+delta);
-        this.emitEvent(new Event(Event.EventType.CALL,player.getName()+": колл", 0));
+        this.emitEvent(new Event(EventType.CALL,player.getName()+": колл", 0));
         this.nextPlayer();
         return new GenericCtx(true, "");
     }
@@ -185,7 +197,7 @@ public class GameManager {
             return new GenericCtx(false, "Не ваш ход");
         var player = this.players.get(uuid);
         player.fold();
-        this.emitEvent(new Event(Event.EventType.FOLD, player.getName()+": сделал фолд", 0));
+        this.emitEvent(new Event(EventType.FOLD, player.getName()+": сделал фолд", 0));
         this.nextPlayer();
         return new GenericCtx(true, "");
     }
@@ -204,14 +216,13 @@ public class GameManager {
         p.giveCard(table.popDeck());
         p.giveCard(table.popDeck());
         this.players.put(uuid, p);
-        this.playerList.add(uuid);
         currentPlayer = uuid;
         return new GenericCtx(true, "");
     }
 
 
     public GenericCtx joinBot(String uuid)  {
-        if (!authPlayer(uuid) || !playerList.get(0).equals(uuid)) {
+        if (!authPlayer(uuid) || !players.keySet().stream().toList().get(0).equals(uuid)) {
             return new GenericCtx(false, "Вы не админ");
         }
         if (isActive) {
@@ -225,7 +236,6 @@ public class GameManager {
         p.giveCard(table.popDeck());
         p.giveCard(table.popDeck());
         this.players.put(botuuid, p);
-        this.playerList.add(botuuid);
         return new GenericCtx(true, "");
     }
     public GenericCtx joinGame(String uuid) {
@@ -242,7 +252,6 @@ public class GameManager {
         p.giveCard(table.popDeck());
         p.giveCard(table.popDeck());
         this.players.put(uuid, p);
-        this.playerList.add(uuid);
         return new GenericCtx(true, "");
     }
 
@@ -252,12 +261,14 @@ public class GameManager {
         }
         TableCtx table = new TableCtx(this.table.getBankPool(),this.table.getDeposit(),this.table.getFlow());
         FrameCtx frame = new FrameCtx(table, this.evtLoop);
-        for (var puuid: this.playerList) {
-            PlayerManagerI player = this.players.get(puuid);
-            PlayerCtx ctx = new PlayerCtx(player.getName(), player.getBank(), player.getDeposit(), player.isFolded(), puuid==this.currentPlayer);
+        for (var p: this.players.entrySet()) {
+            String puuid = p.getKey();
+            IPlayerManager player = p.getValue();
+            PlayerCtx ctx = new PlayerCtx(player.getName(), player.getBank(), player.getDeposit(),
+                    player.isFolded(), puuid.equals(this.currentPlayer));
             if (Objects.equals(puuid, uuid)) {
                 frame.setCurrentPlayer(ctx, player.peek());
-                frame.setAdmin(Objects.equals(uuid, playerList.get(0)));
+                frame.setAdmin(Objects.equals(uuid, players.keySet().stream().toList().get(0)));
             }else{
                 frame.addPlayer(ctx);
             }
@@ -266,13 +277,12 @@ public class GameManager {
     }
 
     public GenericCtx terminate(String uuid) {
-        if(!authPlayer(uuid) || !playerList.get(0).equals(uuid)) {
+        if(!authPlayer(uuid) || !players.keySet().stream().toList().get(0).equals(uuid)) {
             return new GenericCtx(false, "Вы не админ");
         }
         this.isActive = false;
         this.table = new Table();
-        this.playerList = new ArrayList<>();
-        this.players = new HashMap<>();
+        this.players = new TreeMap<>();
         this.currentPlayer = "";
         this.evtLoop = new ArrayList<>();
         return new GenericCtx(true, "");

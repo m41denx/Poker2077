@@ -17,6 +17,11 @@ public class Card {
     public CardType getType() {
         return this.type;
     }
+
+    @Override
+    public String toString() {
+        return this.type.toString() + "[" + this.rank.toString()+ "]";
+    }
 }
 
 
