@@ -1,0 +1,80 @@
+<html lang="ru">
+<head>
+    <title>Poker 2077</title>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body onload="getFrame()">
+<div id="popper" class="absolute top-2 left-2 flex flex-col gap-2 z-50"></div>
+<div class="h-screen relative" id="box">
+    <div class="ptable mx-4 h-screen">
+        <div class="bg-yellow-950 pb-16 rounded-full">
+            <div class="bg-yellow-900 rounded-full p-8">
+                <div class="bg-yellow-950 rounded-full pt-8">
+                    <div class="bg-green-500 h-full flex items-center justify-center rounded-full gap-4">
+                        <div class="flex flex-col items-center justify-center">
+                            <span class="text-8xl opacity-75">♠️</span>
+                            <span class="text-2xl opacity-75 chakra">Poker 2077</span>
+                            <p id="stakes"></p>
+                            <div class="flex gap-4" id="flow"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Players -->
+    <div id="players">
+
+    </div>
+
+    <div class="bottom-8 right-8 p-2 pr-4 absolute flex w-fit items-center gap-4 bg-black bg-opacity-50 rounded-xl border-solid border-[1px] border-slate-400">
+        <img src="img/user.png" class="h-24" />
+        <div class="text-white">
+            <p class="text-2xl">Вы</p>
+            <p class="ml-4">Банк: $<span id="bal">0</span></p>
+        </div>
+        <div class="flex flex-col gap-2 text-white">
+            <p class="px-8 py-2 rounded-lg px bg-red-500 flex justify-center cursor-pointer hover:bg-red-700" onclick="doFold()">Фолд</p>
+            <p class="px-8 py-2 rounded-lg px bg-blue-500 flex justify-center cursor-pointer hover:bg-blue-700" onclick="doCall()">Колл</p>
+        </div>
+        <div class="flex flex-col gap-2 text-white">
+            <p class="px-8 py-2 rounded-lg px bg-green-500 flex justify-center cursor-pointer hover:bg-green-700" onclick="doRaise()">Рейз</p>
+            <input class="focus outline-none border-solid border-[1px] border-slate-400 rounded-lg px-4 py-2 w-32 text-black" placeholder="Сумма" value="50" id="ramount" onkeydown="this.value=this.value.replace(/[^0-9]/g,'');" onkeyup="this.value=this.value.replace(/[^0-9]/g,'');" />
+        </div>
+    </div>
+
+</div>
+
+<!-- Cool black circles -->
+<div class="fixed bottom-0 left-[50%] w-96 h-96 bg-black rounded-full bg-opacity-20 -translate-x-[50%] translate-y-[50%] p-4 transition-all duration-300">
+    <div class="w-full h-full bg-black rounded-full bg-opacity-10 p-4 transition-all duration-300">
+        <div class="w-full h-full bg-black rounded-full bg-opacity-20 p-4 transition-all duration-300">
+            <div class="w-full h-full bg-black rounded-full bg-opacity-10 p-4 transition-all duration-300">
+                <div class="w-full h-full bg-black rounded-full bg-opacity-20 p-4 transition-all duration-300">
+                    <div class="w-full h-full bg-black rounded-full bg-opacity-10 p-4 transition-all duration-300">
+                        <div class="w-full h-full bg-black rounded-full bg-opacity-20 p-4">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hand -->
+<div class="fixed bottom-4 left-[50%] flex items-end gap-1 -translate-x-[50%]" id="hand">
+</div>
+
+<!-- Help section -->
+<div class="bg-black bg-opacity-70 rounded-lg fixed top-4 right-4 p-2 transition-all duration-500 overflow-hidden h-8" id="combos">
+    <div class="bg-black rounded-lg h-8 -m-2 mb-2 px-2 items-center text-white flex justify-between cursor-pointer hover:bg-gray-800 select-none border-solid border-gray-500 border-[1px]" onclick="collapse()" >
+        Помощь <span>🔽</span>
+    </div>
+</div>
+<script src="./main.js" type="text/javascript" charset="UTF-8"></script>
+<script src="./app.js" type="text/javascript" charset="UTF-8"></script>
+</body>
+</html>
