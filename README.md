@@ -1,4 +1,5 @@
 # Poker2077
+![screenshot.png](_/screenshot.png)
 
 Инструкция:
 - Запустить
